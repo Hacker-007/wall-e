@@ -15,7 +15,22 @@ def seconds_to_timestamp(seconds: float):
     return str(timedelta(seconds=seconds))
 
 
-def find_free_1s_intervals(df, step=1.0):
+def find_annotation_intervals(df):
+    """
+    Returns 5-second intervals that satisfy the following constraints:
+        - the verb action in the middle 1-second of the interval has no overlaps
+        - there are at least two seconds of video before and after
+        - there is only one verb during the middle 1-second interval
+
+    Parameters:
+        df (pandas.DataFrame): a DataFrame with video annotation information,
+                               start and stop timestamps for each clip, and
+                               the nouns responsible for the actions
+
+    Returns:
+        a DataFrame with all of the valid intervals found from the provided annotation
+        DataFrame
+    """
     df = df.copy()
     df["start_sec"] = df["start_timestamp"].apply(timestamp_to_seconds)
     df["stop_sec"] = df["stop_timestamp"].apply(timestamp_to_seconds)
@@ -48,30 +63,15 @@ def find_free_1s_intervals(df, step=1.0):
                             "narration_id": narration_id,
                             "participant_id": participant_id,
                             "video_id": video_id,
-                            "start_timestamp": seconds_to_timestamp(round(window_start, 2)),
+                            "start_timestamp": seconds_to_timestamp(
+                                round(window_start, 2)
+                            ),
                             "end_timestamp": seconds_to_timestamp(round(window_end, 2)),
                             "all_nouns": all_nouns,
-                            "all_noun_classes": all_noun_classes
+                            "all_noun_classes": all_noun_classes,
                         }
                     )
 
-            t += step
+            t += 1.0
 
     return pd.DataFrame(result)
-
-
-if __name__ == "__main__":
-    # annotations = pd.read_csv("metadata/raw-annotations.csv")
-    # intervals = find_free_1s_intervals(annotations)
-    # intervals.to_csv('metadata/intervals.csv', index=False)
-
-    intervals = pd.read_csv("metadata/intervals.csv")
-    noun_classes = pd.read_csv("metadata/intervals.csv")
-    
-    all_nouns = intervals['all_noun_classes']
-    noun_counts = defaultdict(int)
-    for l in all_nouns:
-        l = ast.literal_eval(l)
-        for noun in l:
-            noun_counts[noun] += 1
-    sorted_counts = sorted(noun_counts.items(), reverse=True, key=lambda x: x[1])

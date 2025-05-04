@@ -1,9 +1,5 @@
 import os
 import subprocess
-from datetime import datetime, timedelta
-
-import numpy as np
-import pandas as pd
 
 DATASET_BASE_URL = "https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m"
 
@@ -21,9 +17,9 @@ def download_segment(
     Parameters:
         participant_id (str): ID of the participant who created the video
         video_id (str): the video ID of the participant to download
-        start_timestamp (str): Start timestamp in HH:MM:SS.ss format
-        stop_timestamp (str): End timestamp in HH:MM:SS.ss format
-        output_path (str): Path to save the clip (e.g., "my_clip.mp4").
+        start_timestamp (str): start timestamp in HH:MM:SS.ss format
+        stop_timestamp (str): end timestamp in HH:MM:SS.ss format
+        output_path (str): path to save the clip (e.g., "my_clip.mp4")
 
     Returns:
         bool: True if successful, False otherwise.
@@ -55,5 +51,3 @@ def download_segment(
         )
         return False
 
-
-download_segment("P01", "P01_104", "00:00:05", "00:00:10", "test.mp4")
