@@ -1,43 +1,14 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from collections import defaultdict
+import ast
 
 
 def timestamp_to_seconds(t):
     """Convert HH:MM:SS.FF to seconds"""
     t = datetime.strptime(t, "%H:%M:%S.%f")
     return t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1e6
-
-
-def find_single_action_intervals_from_csv(df, bin_size=1.0):
-    """
-    Reads a CSV with columns [video_id, start_seconds, stop_seconds, action_noun]
-    and returns a dict mapping each video_id to a list of (bin_start, bin_end, action_label)
-    for 1s bins where exactly one action overlaps.
-    """
-    kept = [[] for _ in range(len(df))]
-
-    # group annotations by video
-    for vid, group in df.groupby("video_id"):
-        # get numpy arrays for fast filtering
-        starts = group["start_seconds"].values
-        ends = group["stop_seconds"].values
-        idxs = group.index.values
-
-        max_t = ends.max()
-        edges = np.arange(0, np.ceil(max_t) + bin_size, bin_size)
-
-        # iterate over bins
-        for t0, t1 in zip(edges[:-1], edges[1:]):
-            # boolean mask of actions overlapping [t0, t1)
-            overlap_mask = ~((ends <= t0) | (starts >= t1))
-            if overlap_mask.sum() == 1:
-                idx = idxs[overlap_mask][0]
-                kept[idx].append((t0, t1))
-
-        # single_action_bins[vid] = kept
-    return kept
-
 
 def find_free_1s_intervals(df, step=1.0):
     df = df.copy()
@@ -63,17 +34,19 @@ def find_free_1s_intervals(df, step=1.0):
             ]
 
             if len(overlaps) == 1:
-                verb = overlaps.iloc[0]["verb"]
-                result.append(
-                    {
-                        "video_id": video_id,
-                        "window_start": round(window_start, 2),
-                        "window_end": round(window_end, 2),
-                        "middle_start": round(middle_start, 2),
-                        "middle_end": round(middle_end, 2),
-                        "verb": verb,
-                    }
-                )
+                all_nouns = overlaps.iloc[0]["all_nouns"]
+                lst = ast.literal_eval(all_nouns)
+                if len(lst) == 1:
+                    result.append(
+                        {
+                            "video_id": video_id,
+                            "window_start": round(window_start, 2),
+                            "window_end": round(window_end, 2),
+                            "middle_start": round(middle_start, 2),
+                            "middle_end": round(middle_end, 2),
+                            "all_nouns": all_nouns,
+                        }
+                    )
 
             t += step  # slide window forward
 
@@ -81,9 +54,14 @@ def find_free_1s_intervals(df, step=1.0):
 
 
 if __name__ == "__main__":
-    kept = find_single_action_intervals_from_csv("EPIC_100_train.csv")
-    print(kept[0])
-
-    df = pd.read_csv("metadata/annotations.csv")
-    free_df = find_free_1s_intervals(df)
-    print(free_df)
+    # annotations = pd.read_csv("metadata/annotations.csv")
+    # intervals = find_free_1s_intervals(annotations)
+    # intervals.to_csv('metadata/intervals.csv')
+    
+    intervals = pd.read_csv("metadata/intervals.csv")
+    all_nouns = intervals['all_nouns']
+    noun_counts = defaultdict(int)
+    for l in all_nouns:
+        l = ast.literal_eval(l)
+        for noun in l:
+            noun_counts[noun] += 1
