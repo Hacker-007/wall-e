@@ -10,7 +10,7 @@ def download_segment(
     start_timestamp: str,
     stop_timestamp: str,
     output_path: str,
-):
+) -> bool:
     """
     Downloads a clip from a remote data set server using ffmpeg without re-encoding.
 

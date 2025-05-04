@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-.venv/
-.vscode/
-||||||| (empty tree)
-=======
 .venv/
 .vscode/
 data/
->>>>>>> d621753 (feat: initial commit)
+**/__pycache__/

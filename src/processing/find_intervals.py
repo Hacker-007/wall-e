@@ -1,21 +1,20 @@
 import pandas as pd
 from datetime import datetime, timedelta
-from collections import defaultdict
 import ast
 
 
-def timestamp_to_seconds(t: str):
+def timestamp_to_seconds(t: str) -> float:
     """Convert HH:MM:SS.FF to seconds"""
     t = datetime.strptime(t, "%H:%M:%S.%f")
     return t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1e6
 
 
-def seconds_to_timestamp(seconds: float):
+def seconds_to_timestamp(seconds: float) -> str:
     """Convert HH:MM:SS.FF to seconds"""
     return str(timedelta(seconds=seconds))
 
 
-def find_annotation_intervals(df):
+def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns 5-second intervals that satisfy the following constraints:
         - the verb action in the middle 1-second of the interval has no overlaps
@@ -52,12 +51,11 @@ def find_annotation_intervals(df):
             ]
 
             if len(overlaps) == 1:
-                all_nouns = overlaps.iloc[0]["all_nouns"]
                 all_noun_classes = overlaps.iloc[0]["all_noun_classes"]
                 narration_id = overlaps.iloc[0]["narration_id"]
                 participant_id = overlaps.iloc[0]["participant_id"]
-                nouns = ast.literal_eval(all_nouns)
-                if len(nouns) == 1:
+                noun_classes = ast.literal_eval(all_noun_classes)
+                if len(noun_classes) == 1:
                     result.append(
                         {
                             "narration_id": narration_id,
@@ -67,8 +65,7 @@ def find_annotation_intervals(df):
                                 round(window_start, 2)
                             ),
                             "end_timestamp": seconds_to_timestamp(round(window_end, 2)),
-                            "all_nouns": all_nouns,
-                            "all_noun_classes": all_noun_classes,
+                            "middle_noun": noun_classes[0],
                         }
                     )
 
