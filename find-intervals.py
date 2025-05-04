@@ -38,6 +38,7 @@ def find_free_1s_intervals(df, step=1.0):
 
             if len(overlaps) == 1:
                 all_nouns = overlaps.iloc[0]["all_nouns"]
+                all_noun_classes = overlaps.iloc[0]["all_noun_classes"]
                 narration_id = overlaps.iloc[0]["narration_id"]
                 participant_id = overlaps.iloc[0]["participant_id"]
                 nouns = ast.literal_eval(all_nouns)
@@ -50,6 +51,7 @@ def find_free_1s_intervals(df, step=1.0):
                             "start_timestamp": seconds_to_timestamp(round(window_start, 2)),
                             "end_timestamp": seconds_to_timestamp(round(window_end, 2)),
                             "all_nouns": all_nouns,
+                            "all_noun_classes": all_noun_classes
                         }
                     )
 
@@ -59,14 +61,17 @@ def find_free_1s_intervals(df, step=1.0):
 
 
 if __name__ == "__main__":
-    # annotations = pd.read_csv("metadata/annotations.csv")
+    # annotations = pd.read_csv("metadata/raw-annotations.csv")
     # intervals = find_free_1s_intervals(annotations)
     # intervals.to_csv('metadata/intervals.csv', index=False)
-    
+
     intervals = pd.read_csv("metadata/intervals.csv")
-    all_nouns = intervals['all_nouns']
+    noun_classes = pd.read_csv("metadata/intervals.csv")
+    
+    all_nouns = intervals['all_noun_classes']
     noun_counts = defaultdict(int)
     for l in all_nouns:
         l = ast.literal_eval(l)
         for noun in l:
             noun_counts[noun] += 1
+    sorted_counts = sorted(noun_counts.items(), reverse=True, key=lambda x: x[1])
