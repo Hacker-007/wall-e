@@ -2,6 +2,19 @@ import pandas as pd
 from datetime import datetime, timedelta
 import ast
 
+RELEVANT_CLASSES = [
+    10,
+    11,
+    12,
+    13,
+    14,
+    27,
+    29,
+    41,
+    45,
+    57,
+]
+
 
 def timestamp_to_seconds(t: str) -> float:
     """Convert HH:MM:SS.FF to seconds"""
@@ -20,6 +33,7 @@ def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
         - the verb action in the middle 1-second of the interval has no overlaps
         - there are at least two seconds of video before and after
         - there is only one verb during the middle 1-second interval
+        - the verb must be one of the 10 classes that we are interested in
 
     Parameters:
         df (pandas.DataFrame): a DataFrame with video annotation information,
@@ -51,20 +65,17 @@ def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
             ]
 
             if len(overlaps) == 1:
-                all_noun_classes = overlaps.iloc[0]["all_noun_classes"]
                 narration_id = overlaps.iloc[0]["narration_id"]
                 participant_id = overlaps.iloc[0]["participant_id"]
-                noun_classes = ast.literal_eval(all_noun_classes)
-                if len(noun_classes) == 1:
+                noun_classes = ast.literal_eval(overlaps.iloc[0]["all_noun_classes"])
+                if len(noun_classes) == 1 and noun_classes[0] in RELEVANT_CLASSES:
                     result.append(
                         {
                             "narration_id": narration_id,
                             "participant_id": participant_id,
                             "video_id": video_id,
-                            "start_timestamp": seconds_to_timestamp(
-                                round(window_start, 2)
-                            ),
-                            "end_timestamp": seconds_to_timestamp(round(window_end, 2)),
+                            "start_timestamp": seconds_to_timestamp(window_start),
+                            "end_timestamp": seconds_to_timestamp(window_end),
                             "middle_noun": noun_classes[0],
                         }
                     )
