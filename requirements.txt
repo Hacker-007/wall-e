@@ -1,4 +1,8 @@
 requests
+tqdm
 pandas
 numpy
-tqdm
+torch
+transformers
+opencv-python
+pydub
