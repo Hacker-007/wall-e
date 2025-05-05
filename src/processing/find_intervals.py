@@ -1,6 +1,10 @@
-import pandas as pd
 from datetime import datetime, timedelta
+import random
+import string
 import ast
+
+import pandas as pd
+from tqdm import tqdm
 
 RELEVANT_CLASSES = [
     10,
@@ -27,6 +31,11 @@ def seconds_to_timestamp(seconds: float) -> str:
     return str(timedelta(seconds=seconds))
 
 
+def generate_id(length=10):
+    letters = string.ascii_letters
+    return "".join(random.choice(letters) for _ in range(length))
+
+
 def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns 5-second intervals that satisfy the following constraints:
@@ -47,17 +56,18 @@ def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["start_sec"] = df["start_timestamp"].apply(timestamp_to_seconds)
     df["stop_sec"] = df["stop_timestamp"].apply(timestamp_to_seconds)
+    videos_df = pd.read_csv("metadata/video-listing.csv")
     result = []
-    for video_id, group in df.groupby("video_id"):
+    for video_id, group in tqdm(df.groupby("video_id")):
         min_time = group["start_sec"].min()
         max_time = group["stop_sec"].max()
 
         t = min_time
-        while t + 5.0 <= max_time:
+        while t + 3.0 <= max_time:
             window_start = t
-            window_end = t + 5.0
-            middle_start = t + 2.0
-            middle_end = t + 3.0
+            window_end = t + 3.0
+            middle_start = t + 1.0
+            middle_end = t + 2.0
 
             # Find all annotations that overlap with the middle 1-second interval
             overlaps = group[
@@ -65,13 +75,18 @@ def find_annotation_intervals(df: pd.DataFrame) -> pd.DataFrame:
             ]
 
             if len(overlaps) == 1:
-                narration_id = overlaps.iloc[0]["narration_id"]
                 participant_id = overlaps.iloc[0]["participant_id"]
                 noun_classes = ast.literal_eval(overlaps.iloc[0]["all_noun_classes"])
-                if len(noun_classes) == 1 and noun_classes[0] in RELEVANT_CLASSES:
+                has_video = (videos_df == [participant_id, video_id]).all(axis=1)
+                if (
+                    len(noun_classes) == 1
+                    and noun_classes[0] in RELEVANT_CLASSES
+                    and has_video.any()
+                ):
+                    interval_id = generate_id()
                     result.append(
                         {
-                            "narration_id": narration_id,
+                            "interval_id": interval_id,
                             "participant_id": participant_id,
                             "video_id": video_id,
                             "start_timestamp": seconds_to_timestamp(window_start),

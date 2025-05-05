@@ -1,8 +1,21 @@
 import os
 import subprocess
+import requests
 
-DATASET_BASE_URL = "https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m"
+DATASET_URL_FORMATS = [
+    "https://data.bris.ac.uk/datasets/3h91syskeag572hl6tvuovwv4d/videos/train/<participant_id>/<video_id>.MP4",
+    "https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/<participant_id>/videos/<video_id>.MP4",
+]
 
+def get_data_url(participant_id: str, video_id: str) -> str:
+    for url in DATASET_URL_FORMATS:
+        url = url.replace("<participant_id>", participant_id)
+        url = url.replace("<video_id>", video_id)
+        response = requests.head(url)
+        if response.status_code == 200:
+            return url
+        
+    raise Exception(f'{participant_id}/{video_id} does not exist')
 
 def download_segment(
     participant_id: str,
@@ -25,7 +38,7 @@ def download_segment(
         bool: True if successful, False otherwise.
     """
 
-    url = f"{DATASET_BASE_URL}/{participant_id}/videos/{video_id}.MP4"
+    url = get_data_url(participant_id, video_id)
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     command = [
         "ffmpeg",
@@ -38,6 +51,8 @@ def download_segment(
         "-c",
         "copy",
         "-y",
+        "-preset",
+        "ultrafast",
         output_path,
     ]
 
@@ -50,4 +65,3 @@ def download_segment(
             e.stderr.decode(),
         )
         return False
-

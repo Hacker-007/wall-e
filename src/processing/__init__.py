@@ -1,8 +1,9 @@
 import os
 import pandas as pd
+from tqdm import tqdm
 
 from .find_intervals import find_annotation_intervals
-
+from .data_fetching import get_data_url
 
 def get_intervals() -> pd.DataFrame:
     interval_path = "metadata/intervals.csv"
@@ -21,7 +22,6 @@ def get_intervals() -> pd.DataFrame:
 
 def batch_intervals():
     intervals_df = get_intervals()
-    print(intervals_df.groupby("middle_noun").count())
-
+    print(intervals_df)
 
 # download_segment("P01", "P01_104", "00:00:05", "00:00:10", "test.mp4")
