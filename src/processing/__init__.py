@@ -1,9 +1,8 @@
+from typing import List
 import os
 import pandas as pd
-from tqdm import tqdm
 
 from .find_intervals import find_annotation_intervals
-from .data_fetching import get_data_url
 
 def get_intervals() -> pd.DataFrame:
     interval_path = "metadata/intervals.csv"
@@ -20,8 +19,17 @@ def get_intervals() -> pd.DataFrame:
     return sampled_df
 
 
-def batch_intervals():
+def batch_intervals(num_groups: int) -> List[pd.DataFrame]:
     intervals_df = get_intervals()
-    print(intervals_df)
+    num_intervals = len(intervals_df)
+    batches = []
+    batch_size = num_intervals // num_groups
+    for start_row in range(0, num_intervals, batch_size):
+        end_row = min(start_row + batch_size, num_intervals)
+        batch_df = intervals_df.iloc[start_row:end_row]
+        batch_df = batch_df.sort_values(by=['participant_id', 'video_id'])
+        batches.append(batch_df)
+
+    return batches
 
 # download_segment("P01", "P01_104", "00:00:05", "00:00:10", "test.mp4")
