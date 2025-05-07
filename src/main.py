@@ -1,14 +1,19 @@
 import os
+import multiprocessing as mp
 
-from processing import batch_intervals, download_interval, encode_video
+from processing import Interval, batch_intervals, download_interval, encode_video
 
-batches = batch_intervals(1)
-for batch in batches:
-    interval_df = batch.iloc[0]
-    video_path = download_interval(interval_df)
-    encode_video(
-        video_path,
-        f"data/{interval_df['interval_id']}.pt",
-    )
 
+def process_interval(interval: Interval):
+    video_path = download_interval(interval)
+    encoded_path = encode_video(video_path, interval)
     os.remove(video_path)
+    return encoded_path
+
+
+if __name__ == "__main__":
+    batches = batch_intervals(1)
+    batch = batches[0]
+    intervals = batch.get_intervals()
+    with mp.Pool(processes=5) as pool:
+        pool.map(process_interval, intervals)
