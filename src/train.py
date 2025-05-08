@@ -1,14 +1,15 @@
 from glob import glob
 import os
-from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, Subset
 from transformers import AutoModel, AutoConfig
+import wandb
 
 from processing import EncodedData, get_tokens
 from processing.find_intervals import RELEVANT_CLASSES
+from processing.wandb import WandbConfiguration
 
 
 class VideoAudioDataset(Dataset):
@@ -58,7 +59,7 @@ def collate(batch: list[EncodedData]):
     # because this is the range that the loss function expects classes to
     # be in. This can be reversed when doing predictions with the operation
     # RELEVANT_CLASSES[predicted_noun].
-    noun_mapping = { noun: idx for idx, noun in enumerate(RELEVANT_CLASSES) }
+    noun_mapping = {noun: idx for idx, noun in enumerate(RELEVANT_CLASSES)}
     nouns = [noun_mapping[noun] for noun in nouns]
     nouns = torch.tensor(nouns, dtype=torch.long)
     return nouns, padded_audio, padded_video, audio_mask, video_mask
@@ -116,17 +117,16 @@ def get_dataloader(dataset: Subset) -> DataLoader:
     )
 
 
-def train_epoch(
+def run_epoch(
     dataloader: DataLoader,
     device: torch.device,
     model: MultimodalTransformer,
     optimizer: torch.optim.AdamW,
     criterion: nn.CrossEntropyLoss,
-    desc: str,
-    is_train=False
+    is_train=True,
 ) -> tuple[float, float]:
     total_loss, correct, total = 0, 0, 0
-    for nouns, audio, video, audio_mask, video_mask in tqdm(dataloader, desc=desc):
+    for nouns, audio, video, audio_mask, video_mask in dataloader:
         audio = audio.to(device)
         video = video.to(device)
         audio_mask = audio_mask.to(device)
@@ -138,7 +138,7 @@ def train_epoch(
 
         logits = model(audio, video, audio_mask, video_mask)
         loss = criterion(logits, nouns)
-        
+
         if is_train:
             loss.backward()
             optimizer.step()
@@ -153,18 +153,25 @@ def train_epoch(
     return avg_loss, accuracy
 
 
-def train_model(data_dir: str, checkpoint_dir: str, *, num_epochs: int) -> str:
+def train_model(
+    data_dir: str,
+    checkpoint_dir: str,
+    wandb_config: WandbConfiguration,
+    *,
+    num_epochs: int,
+) -> str:
     """
     Train the multimodal transformer model.
 
     Args:
         data_dir (str): directory with .pt files
         checkpoint_dir (str): directory to save model checkpoints
-        num_epochs (int): number of epochs to train the model for 
+        num_epochs (int): number of epochs to train the model for
 
     Returns:
-        the trained model object
+        the path to the trained model file
     """
+    run = wandb.init(entity=wandb_config.team, project=wandb_config.project)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset = VideoAudioDataset(data_dir)
 
@@ -179,47 +186,57 @@ def train_model(data_dir: str, checkpoint_dir: str, *, num_epochs: int) -> str:
     val_dataloader = get_dataloader(val_dataset)
 
     model = MultimodalTransformer().to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss()
     for epoch in range(num_epochs):
         model.train()
-        train_loss, train_accuracy = train_epoch(
+        train_loss, train_accuracy = run_epoch(
             train_dataloader,
             device,
             model,
             optimizer,
             criterion,
-            f"Epoch {epoch + 1} / {num_epochs} (Train)",
         )
 
         model.eval()
         with torch.no_grad():
-            val_loss, val_accuracy = train_epoch(
-                val_dataloader,
-                device,
-                model,
-                optimizer,
-                criterion,
-                f"Epoch {epoch + 1} / {num_epochs} (Validation)",
+            val_loss, val_accuracy = run_epoch(
+                val_dataloader, device, model, optimizer, criterion, is_train=False
             )
 
-        print(f"Epoch {epoch + 1} / {num_epochs}")
-        print(f"Train Loss: {train_loss:.4f}")
-        print(f"Train Accuracy: {train_accuracy:.4f}")
-        print(f"Validaiton Loss: {val_loss:.4f}")
-        print(f"Validation Accuracy: {val_accuracy:.4f}")
-        checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_{epoch + 1}.pt")
+        print(f"Epoch {epoch + 1} / {num_epochs}:")
+        print(f"   Train Loss: {train_loss:.4f}")
+        print(f"   Train Accuracy: {train_accuracy:.4f}")
+        print(f"   Validation Loss: {val_loss:.4f}")
+        print(f"   Validation Accuracy: {val_accuracy:.4f}")
+        print()
+        run.log(
+            {
+                "epoch": epoch + 1,
+                "train_loss": train_loss,
+                "train_accuracy": train_accuracy,
+                "validation_loss": val_loss,
+                "validation_accuracy": val_accuracy,
+            }
+        )
+
+        checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint.pt")
+        run.log_model(path=checkpoint_path, name="checkpoint")
         torch.save(
             {
                 "epoch": epoch + 1,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "train_loss": train_loss,
+                "train_accuracy": train_accuracy,
                 "val_loss": val_loss,
+                "validation_accuracy": val_accuracy,
             },
             checkpoint_path,
         )
 
     trained_model_path = os.path.join(checkpoint_dir, "trained.pt")
+    run.log_model(path=trained_model_path, name="trained")
     torch.save(model.state_dict(), trained_model_path)
+    run.finish()
     return trained_model_path

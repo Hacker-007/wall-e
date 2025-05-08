@@ -6,3 +6,4 @@ torch
 transformers
 opencv-python
 pydub
+wandb
