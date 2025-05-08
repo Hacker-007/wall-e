@@ -68,6 +68,8 @@ class Encoder:
         audio_tokens = self._encode_audio(audio)
         video_tokens = self._encode_video(frames)
 
+        assert audio_tokens.shape[2] == 768
+        assert video_tokens.shape[2] == 768
         return {
             "audio": audio_tokens,
             "video": video_tokens,

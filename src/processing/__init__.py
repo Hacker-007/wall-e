@@ -39,13 +39,13 @@ class IntervalBatch:
 
 
 def get_intervals() -> pd.DataFrame:
-    interval_path = "metadata/intervals.csv"
+    interval_path = os.path.join("metadata", "intervals.csv")
     if os.path.exists(interval_path):
         return pd.read_csv(interval_path)
 
-    annotation_df = pd.read_csv("metadata/annotations.csv")
+    annotation_df = pd.read_csv(os.path.join("metadata", "annotations.csv"))
     intervals_df = find_annotation_intervals(annotation_df)
-    
+
     # Randomly sample 200 videos per noun to create our "dataset"
     sampled_df = intervals_df.groupby("middle_noun", group_keys=False).apply(
         lambda rows: rows.sample(n=200, random_state=42)
@@ -70,7 +70,7 @@ def batch_intervals(batch_size: int) -> List[IntervalBatch]:
 
 
 def download_interval(interval: Interval) -> str:
-    file_path = f"data/{interval.interval_id}.mp4"
+    file_path = os.path.join("data", f"{interval.interval_id}.mp4")
     download_segment(
         interval.participant_id,
         interval.video_id,
@@ -84,7 +84,7 @@ def download_interval(interval: Interval) -> str:
 def encode_video(video_path: str, interval: Interval):
     encoder = Encoder()
     tokens = encoder.process_interval(video_path)
-    encoded_path = f"data/{interval.interval_id}.pt"
+    encoded_path = os.path.join("data", f"{interval.interval_id}.pt")
     torch.save(
         {
             "noun": interval.middle_noun,
@@ -97,8 +97,7 @@ def encode_video(video_path: str, interval: Interval):
     return encoded_path
 
 
-def get_tokens(interval: Interval) -> EncodedData:
-    encoded_path = f"data/{interval.interval_id}.pt"
+def get_tokens(encoded_path: str) -> EncodedData:
     encoded_data = torch.load(encoded_path)
     split_point = encoded_data["split_point"]
     all_tokens = encoded_data["tokens"]
