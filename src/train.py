@@ -153,13 +153,14 @@ def train_epoch(
     return avg_loss, accuracy
 
 
-def train_model(data_dir, checkpoint_dir) -> str:
+def train_model(data_dir: str, checkpoint_dir: str, *, num_epochs: int) -> str:
     """
     Train the multimodal transformer model.
 
     Args:
-        data_dir (str): Directory with .pt files.
-        checkpoint_dir (str): Directory to save model checkpoints.
+        data_dir (str): directory with .pt files
+        checkpoint_dir (str): directory to save model checkpoints
+        num_epochs (int): number of epochs to train the model for 
 
     Returns:
         the trained model object
@@ -180,7 +181,7 @@ def train_model(data_dir, checkpoint_dir) -> str:
     model = MultimodalTransformer().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     criterion = nn.CrossEntropyLoss()
-    for epoch in range(3):
+    for epoch in range(num_epochs):
         model.train()
         train_loss, train_accuracy = train_epoch(
             train_dataloader,
@@ -188,7 +189,7 @@ def train_model(data_dir, checkpoint_dir) -> str:
             model,
             optimizer,
             criterion,
-            f"Epoch {epoch + 1} / 3 (Train)",
+            f"Epoch {epoch + 1} / {num_epochs} (Train)",
         )
 
         model.eval()
@@ -199,10 +200,10 @@ def train_model(data_dir, checkpoint_dir) -> str:
                 model,
                 optimizer,
                 criterion,
-                f"Epoch {epoch + 1} / 3 (Validation)",
+                f"Epoch {epoch + 1} / {num_epochs} (Validation)",
             )
 
-        print(f"Epoch {epoch + 1} / 3")
+        print(f"Epoch {epoch + 1} / {num_epochs}")
         print(f"Train Loss: {train_loss:.4f}")
         print(f"Train Accuracy: {train_accuracy:.4f}")
         print(f"Validaiton Loss: {val_loss:.4f}")

@@ -24,7 +24,7 @@ class EncodedData(NamedTuple):
     video: torch.Tensor
 
 
-class IntervalBatch:
+class IntervalGroup:
     df: pd.DataFrame
 
     def __init__(self, df: pd.DataFrame):
@@ -46,27 +46,32 @@ def get_intervals() -> pd.DataFrame:
     annotation_df = pd.read_csv(os.path.join("metadata", "annotations.csv"))
     intervals_df = find_annotation_intervals(annotation_df)
 
-    # Randomly sample 200 videos per noun to create our "dataset"
+    # Randomly sample 300 videos per noun to create our "dataset"
     sampled_df = intervals_df.groupby("middle_noun", group_keys=False).apply(
-        lambda rows: rows.sample(n=200, random_state=42)
+        lambda rows: rows.sample(n=300, random_state=42)
     )
 
     sampled_df.to_csv(interval_path, index=False)
     return sampled_df
 
 
-def batch_intervals(batch_size: int) -> List[IntervalBatch]:
+def group_intervals(group_size: int, is_train=True) -> List[IntervalGroup]:
     intervals_df = get_intervals()
-    num_intervals = len(intervals_df)
-    batches = []
-    for start_row in range(0, num_intervals, batch_size):
-        end_row = min(start_row + batch_size, num_intervals)
-        batch_df = intervals_df.iloc[start_row:end_row]
-        batch_df = batch_df.sort_values(by=["participant_id", "video_id"])
-        batch_df.index = np.arange(0, len(batch_df))
-        batches.append(IntervalBatch(batch_df))
+    groups = []
+    if is_train:
+        interval_start, interval_end = 0, 2 * (len(intervals_df) // 3)
+    else:
+        interval_start, interval_end = 2 * (len(intervals_df) // 3), len(intervals_df)
 
-    return batches
+    print(interval_start, interval_end)
+    for start_row in range(interval_start, interval_end, group_size):
+        end_row = min(start_row + group_size, interval_end)
+        group_df = intervals_df.iloc[start_row:end_row]
+        group_df = group_df.sort_values(by=["participant_id", "video_id"])
+        group_df.index = np.arange(0, len(group_df))
+        groups.append(IntervalGroup(group_df))
+
+    return groups
 
 
 def download_interval(interval: Interval) -> str:

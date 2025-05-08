@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import multiprocessing as mp
 
-from processing import Interval, batch_intervals, download_interval, encode_video
+from processing import Interval, group_intervals, download_interval, encode_video
 from train import train_model
 
 
@@ -17,13 +17,13 @@ def process_interval(interval: Interval):
 
 
 if __name__ == "__main__":
-    Path('data/').mkdir(exist_ok=True)
-    Path('checkpoints/').mkdir(exist_ok=True)
+    Path("data/").mkdir(exist_ok=True)
+    Path("checkpoints/").mkdir(exist_ok=True)
     group_size = 5
-    batches = batch_intervals(group_size)
-    batch = batches[0]
-    intervals = batch.get_intervals()
-    with mp.Pool(processes=group_size) as pool:
-        pool.map(process_interval, intervals)
-    
-    train_model("data", "checkpoints")
+    groups = group_intervals(group_size)
+    for group in groups:
+        intervals = group.get_intervals()
+        with mp.Pool(processes=group_size) as pool:
+            pool.map(process_interval, intervals)
+
+    train_model("data", "checkpoints", num_epochs=3)
