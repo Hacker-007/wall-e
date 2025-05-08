@@ -14,7 +14,7 @@ def process_interval(args: tuple[Encoder, Interval]):
     try:
         encoder, interval = args
         video_path = download_interval(interval)
-        encoded_path = encode_video(encoder, video_path, interval)
+        encode_video(encoder, video_path, interval)
         os.remove(video_path)
     except Exception as e:
         print(f"Error occurred when processing interval {interval.interval_id}: {e}")
