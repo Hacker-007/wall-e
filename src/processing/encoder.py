@@ -49,9 +49,7 @@ class Encoder:
         self.video_model.eval()
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.audio_processor = self.audio_processor.to(self.device)
         self.audio_model = self.audio_model.to(self.device)
-        self.video_processor = self.video_processor.to(self.device)
         self.video_model = self.video_model.to(self.device)
 
         self.sample_rate = 16000
@@ -138,6 +136,7 @@ class Encoder:
         )
 
         with torch.no_grad():
+            inputs = inputs.to(self.device)
             outputs = self.audio_model(**inputs)
 
         # Extract hidden states as tokens (e.g., last hidden state)
