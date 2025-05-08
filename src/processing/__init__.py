@@ -45,8 +45,10 @@ def get_intervals() -> pd.DataFrame:
 
     annotation_df = pd.read_csv("metadata/annotations.csv")
     intervals_df = find_annotation_intervals(annotation_df)
+    
+    # Randomly sample 200 videos per noun to create our "dataset"
     sampled_df = intervals_df.groupby("middle_noun", group_keys=False).apply(
-        lambda rows: rows.sample(n=1000, random_state=42)
+        lambda rows: rows.sample(n=200, random_state=42)
     )
 
     sampled_df.to_csv(interval_path, index=False)

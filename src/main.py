@@ -12,8 +12,9 @@ def process_interval(interval: Interval):
 
 
 if __name__ == "__main__":
-    batches = batch_intervals(1)
+    group_size = 1
+    batches = batch_intervals(group_size)
     batch = batches[0]
     intervals = batch.get_intervals()
-    with mp.Pool(processes=5) as pool:
+    with mp.Pool(processes=group_size) as pool:
         pool.map(process_interval, intervals)
