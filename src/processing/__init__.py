@@ -63,7 +63,6 @@ def group_intervals(group_size: int, is_train=True) -> List[IntervalGroup]:
     else:
         interval_start, interval_end = 2 * (len(intervals_df) // 3), len(intervals_df)
 
-    print(interval_start, interval_end)
     for start_row in range(interval_start, interval_end, group_size):
         end_row = min(start_row + group_size, interval_end)
         group_df = intervals_df.iloc[start_row:end_row]
