@@ -38,7 +38,10 @@ class Encoder:
         self.audio_model = AutoModel.from_pretrained(audio_model_name)
         self.audio_model.eval()
 
-        self.video_processor = AutoImageProcessor.from_pretrained(video_model_name)
+        self.video_processor = AutoImageProcessor.from_pretrained(
+            video_model_name,
+            use_fast=True,
+        )
         self.video_model = AutoModel.from_pretrained(
             video_model_name,
             add_pooling_layer=False,
