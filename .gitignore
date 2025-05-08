@@ -1,7 +1,8 @@
+.DS_Store
 .venv/
 .vscode/
+**/__pycache__/
 data/
 checkpoints/
-**/__pycache__/
-.DS_Store
+wandb/
 config.yaml

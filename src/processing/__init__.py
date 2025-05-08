@@ -85,8 +85,7 @@ def download_interval(interval: Interval) -> str:
     return file_path
 
 
-def encode_video(video_path: str, interval: Interval):
-    encoder = Encoder()
+def encode_video(encoder: Encoder, video_path: str, interval: Interval):
     tokens = encoder.process_interval(video_path)
     encoded_path = os.path.join("data", f"{interval.interval_id}.pt")
     torch.save(
