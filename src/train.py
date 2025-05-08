@@ -110,7 +110,7 @@ class MultimodalTransformer(nn.Module):
 def get_dataloader(dataset: Subset) -> DataLoader:
     return DataLoader(
         dataset,
-        batch_size=8,
+        batch_size=32,
         shuffle=True,
         num_workers=4,
         collate_fn=collate,

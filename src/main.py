@@ -30,12 +30,12 @@ def load_configuration(config_file: str) -> WandbConfiguration:
 if __name__ == "__main__":
     Path("data/").mkdir(exist_ok=True)
     Path("checkpoints/").mkdir(exist_ok=True)
-    # group_size = 20
-    # groups = group_intervals(group_size)
-    # for group in groups:
-    #     intervals = group.get_intervals()
-    #     with mp.Pool(processes=group_size) as pool:
-    #         pool.map(process_interval, intervals)
+    group_size = 24
+    groups = group_intervals(group_size)
+    for group in groups:
+        intervals = group.get_intervals()
+        with mp.Pool(processes=group_size) as pool:
+            pool.map(process_interval, intervals)
 
     wandb_config = load_configuration('config.yaml')
     train_model("data", "checkpoints", wandb_config, num_epochs=3)
