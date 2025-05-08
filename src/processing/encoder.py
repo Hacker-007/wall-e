@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import torch
 from pydub import AudioSegment
-from transformers import AutoModel, AutoProcessor
+from transformers import AutoModel, AutoImageProcessor, AutoProcessor
 
 # Since we are only encoding the input videos,
 # we can ignore the following warnings that pertain to
@@ -38,11 +38,10 @@ class Encoder:
         self.audio_model = AutoModel.from_pretrained(audio_model_name)
         self.audio_model.eval()
 
-        self.video_processor = AutoProcessor.from_pretrained(
-            video_model_name, use_fast=True
-        )
+        self.video_processor = AutoImageProcessor.from_pretrained(video_model_name)
         self.video_model = AutoModel.from_pretrained(
-            video_model_name, add_pooling_layer=False
+            video_model_name,
+            add_pooling_layer=False,
         )
         self.video_model.eval()
 
@@ -128,7 +127,9 @@ class Encoder:
             torch.Tensor: Audio tokens.
         """
         inputs = self.audio_processor(
-            audio, sampling_rate=self.sample_rate, return_tensors="pt"
+            audio,
+            sampling_rate=self.sample_rate,
+            return_tensors="pt",
         )
 
         with torch.no_grad():
