@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from tqdm import tqdm
 import yaml
 import wandb
 from concurrent.futures import ThreadPoolExecutor
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     group_size = 10
     groups = group_intervals(group_size)
     encoder = Encoder()
-    for group in groups:
+    for group in tqdm(groups):
         intervals = group.get_intervals()
         args_list = [(encoder, interval) for interval in intervals]
         with ThreadPoolExecutor(max_workers=group_size) as executor:
