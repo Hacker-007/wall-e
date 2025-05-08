@@ -18,6 +18,12 @@ class Interval(NamedTuple):
     middle_noun: int
 
 
+class EncodedData(NamedTuple):
+    noun: str
+    audio: torch.Tensor
+    video: torch.Tensor
+
+
 class IntervalBatch:
     df: pd.DataFrame
 
@@ -79,6 +85,7 @@ def encode_video(video_path: str, interval: Interval):
     encoded_path = f"data/{interval.interval_id}.pt"
     torch.save(
         {
+            "noun": interval.middle_noun,
             "split_point": tokens["audio"].shape[1],
             "tokens": torch.cat([tokens["audio"], tokens["video"]], dim=1),
         },
@@ -88,14 +95,15 @@ def encode_video(video_path: str, interval: Interval):
     return encoded_path
 
 
-def get_tokens(interval: Interval) -> dict[str, torch.Tensor]:
+def get_tokens(interval: Interval) -> EncodedData:
     encoded_path = f"data/{interval.interval_id}.pt"
     encoded_data = torch.load(encoded_path)
     split_point = encoded_data["split_point"]
     all_tokens = encoded_data["tokens"]
     audio_tokens = all_tokens[:, :split_point]
     video_tokens = all_tokens[:, split_point:]
-    return {
-        "audio": audio_tokens,
-        "video": video_tokens,
-    }
+    return EncodedData(
+        encoded_data["noun"],
+        audio_tokens,
+        video_tokens,
+    )
