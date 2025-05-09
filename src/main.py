@@ -48,4 +48,4 @@ if __name__ == "__main__":
                 executor.submit(process_interval, args)
 
     wandb_config = load_configuration("config.yaml")
-    train_model("data", "checkpoints", wandb_config, num_epochs=3)
+    train_model("data", "checkpoints", wandb_config, num_epochs=10)

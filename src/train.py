@@ -23,7 +23,6 @@ class VideoAudioDataset(Dataset):
         """
 
         self.encoded_files = glob(os.path.join(data_dir, "*.pt"))
-        # self.interval_ids = [fname[5:-3] for fname in self.encoded_files]
 
     def __len__(self):
         return len(self.encoded_files)
@@ -188,7 +187,7 @@ def train_model(
     val_dataloader = get_dataloader(val_dataset)
 
     model = MultimodalTransformer().to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     criterion = nn.CrossEntropyLoss()
     for epoch in range(num_epochs):
         model.train()
@@ -203,7 +202,12 @@ def train_model(
         model.eval()
         with torch.no_grad():
             val_loss, val_accuracy = run_epoch(
-                val_dataloader, device, model, optimizer, criterion, is_train=False
+                val_dataloader,
+                device,
+                model,
+                optimizer,
+                criterion,
+                is_train=False,
             )
 
         print(f"Epoch {epoch + 1} / {num_epochs}:")
@@ -235,8 +239,6 @@ def train_model(
             },
             checkpoint_path,
         )
-
-        run.log_model(path=checkpoint_path, name="checkpoint")
 
     trained_model_path = os.path.join(checkpoint_dir, "trained.pt")
     torch.save(model.state_dict(), trained_model_path)
