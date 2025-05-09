@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader, Subset
 from transformers import AutoModel, AutoConfig
 import wandb
@@ -171,6 +172,7 @@ def train_model(
     Returns:
         the path to the trained model file
     """
+    mp.set_start_method("spawn", force=True)
     run = wandb.init(entity=wandb_config.team, project=wandb_config.project)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset = VideoAudioDataset(data_dir)
@@ -221,7 +223,6 @@ def train_model(
         )
 
         checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint.pt")
-        run.log_model(path=checkpoint_path, name="checkpoint")
         torch.save(
             {
                 "epoch": epoch + 1,
@@ -235,8 +236,10 @@ def train_model(
             checkpoint_path,
         )
 
+        run.log_model(path=checkpoint_path, name="checkpoint")
+
     trained_model_path = os.path.join(checkpoint_dir, "trained.pt")
-    run.log_model(path=trained_model_path, name="trained")
     torch.save(model.state_dict(), trained_model_path)
+    run.log_model(path=trained_model_path, name="trained")
     run.finish()
     return trained_model_path
